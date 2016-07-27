@@ -89,64 +89,69 @@ function Pokeio() {
     }
   };
 
-  function api_req(api_endpoint, access_token, req, callback) {
-    // Auth
-    var auth = new RequestEnvelop.AuthInfo({
-      provider: self.playerInfo.provider,
-      token: new RequestEnvelop.AuthInfo.JWT(access_token, 59)
-    });
-
-    var f_req = new RequestEnvelop({
-      unknown1: 2,
-      rpc_id: 1469378659230941192,
-
-      requests: req,
-
-      latitude: self.playerInfo.latitude,
-      longitude: self.playerInfo.longitude,
-      altitude: self.playerInfo.altitude,
-
-      auth: auth,
-      unknown12: 989
-    });
-
-    var protobuf = f_req.encode().toBuffer();
-
-    var options = {
-      url: api_endpoint,
-      body: protobuf,
-      encoding: null,
-      headers: {
-        'User-Agent': 'Niantic App'
+  function api_req(access_token, req, callback) {
+    self.GetApiEndpoint(access_token, function(err, apiEndpoint) {
+      if (err) {
+        return callback(err);
       }
-    };
+      // Auth
+      var auth = new RequestEnvelop.AuthInfo({
+        provider: self.playerInfo.provider,
+        token: new RequestEnvelop.AuthInfo.JWT(access_token, 59)
+      });
+
+      var f_req = new RequestEnvelop({
+        unknown1: 2,
+        rpc_id: 1469378659230941192,
+
+        requests: req,
+
+        latitude: self.playerInfo.latitude,
+        longitude: self.playerInfo.longitude,
+        altitude: self.playerInfo.altitude,
+
+        auth: auth,
+        unknown12: 989
+      });
+
+      var protobuf = f_req.encode().toBuffer();
+
+      var options = {
+        url: apiEndpoint,
+        body: protobuf,
+        encoding: null,
+        headers: {
+          'User-Agent': 'Niantic App'
+        }
+      };
 
     self.request.post(options, function (err, response, body) {
       if (err) {
         return callback(new Error('Error'));
       }
 
-      if (response === undefined || body === undefined) {
-        console.error('[!] RPC Server offline');
-        return callback(new Error('RPC Server offline'));
-      }
-
-      var f_ret;
-      try {
-        f_ret = ResponseEnvelop.decode(body);
-      } catch (e) {
-        if (e.decoded) {
-          // Truncated
-          console.warn(e);
-          f_ret = e.decoded; // Decoded message with missing required fields
+        if (response === undefined || body === undefined) {
+          console.error('[!] RPC Server offline');
+          return callback(new Error('RPC Server offline'));
         }
-      }
 
-      if (f_ret) {
-        return callback(null, f_ret);
-      } else {
-        api_req(api_endpoint, access_token, req, callback);
-      }
+        var f_ret;
+        try {
+          f_ret = ResponseEnvelop.decode(body);
+        } catch (e) {
+          if (e.decoded) {
+            // Truncated
+            console.warn(e);
+            f_ret = e.decoded; // Decoded message with missing required fields
+          }
+        }
+
+        if (f_ret) {
+          return callback(null, f_ret);
+        } else {
+          api_req(access_token, req, callback);
+        }
+      });
     });
   }
 
@@ -203,7 +208,7 @@ function Pokeio() {
   self.GetApiEndpoint = function (accessToken, callback) {
     var req = [new RequestEnvelop.Requests(2), new RequestEnvelop.Requests(126), new RequestEnvelop.Requests(4), new RequestEnvelop.Requests(129), new RequestEnvelop.Requests(5)];
 
-    api_req(api_url, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       }
@@ -217,7 +222,7 @@ function Pokeio() {
   self.GetInventory = function (accessToken, callback) {
     var req = new RequestEnvelop.Requests(4);
 
-    api_req(self.playerInfo.apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       }
@@ -233,7 +238,7 @@ function Pokeio() {
 
   self.GetProfile = function (accessToken, callback) {
     var req = new RequestEnvelop.Requests(2);
-    api_req(self.playerInfo.apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       }
@@ -279,7 +284,7 @@ function Pokeio() {
 
     var req = [new RequestEnvelop.Requests(106, walkData.encode().toBuffer()), new RequestEnvelop.Requests(126), new RequestEnvelop.Requests(4, new RequestEnvelop.Unknown3(Date.now().toString()).encode().toBuffer()), new RequestEnvelop.Requests(129), new RequestEnvelop.Requests(5, new RequestEnvelop.Unknown3('05daf51635c82611d1aac95c0b051d3ec088a930').encode().toBuffer())];
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -317,7 +322,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(104, fortDetailsMessage.encode().toBuffer());
 
-    api_req(self.playerInfo.apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -346,7 +351,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(101, fortSearchMessage.encode().toBuffer());
 
-    api_req(self.playerInfo.apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -373,7 +378,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(125, evolvePokemon.encode().toBuffer());
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -400,7 +405,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(112, transferPokemon.encode().toBuffer());
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -434,7 +439,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(103, catchPokemon.encode().toBuffer());
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -467,7 +472,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(102, encounterPokemon.encode().toBuffer());
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -498,7 +503,7 @@ function Pokeio() {
 
     var req = new RequestEnvelop.Requests(137, dropItemMessage.encode().toBuffer());
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
@@ -527,7 +532,7 @@ function Pokeio() {
     var _self$playerInfo3 = self.playerInfo;
     var apiEndpoint = _self$playerInfo3.apiEndpoint;
 
-    api_req(apiEndpoint, accessToken, req, function (err, f_ret) {
+    api_req(accessToken, req, function (err, f_ret) {
       if (err) {
         return callback(err);
       } else if (!f_ret || !f_ret.payload || !f_ret.payload[0]) {
