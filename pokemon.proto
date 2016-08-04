@@ -333,7 +333,7 @@ message ResponseEnvelop {
   }
 
   message Pokemon {
-    optional int32 id = 1;
+    optional fixed64 id = 1;
     optional PokemonId pokemon_type = 2;
     optional int32 cp = 3;
     optional int32 stamina = 4;
@@ -351,7 +351,7 @@ message ResponseEnvelop {
     optional int32 individual_attack = 17;
     optional int32 individual_defense = 18;
     optional int32 individual_stamina = 19;
-    optional int32 cp_multiplier = 20;
+    optional float cp_multiplier = 20;
     optional int32 pokeball = 21;
     optional uint64 captured_cell_id = 22;
     optional int32 battles_attacked = 23;
@@ -1092,10 +1092,10 @@ message ResponseEnvelop {
       ERROR_POKEMON_IS_EGG = 4;
     }
   }
- 
-  message EvolvePokemonResponse 
+
+  message EvolvePokemonResponse
   {
-    optional EvolvePokemonStatus Result = 1;
+    optional EvolvePokemonStatus Status = 1;
     optional Pokemon EvolvedPokemon = 2;
     optional int32 ExpAwarded = 3;
     optional int32 CandyAwarded = 4;
